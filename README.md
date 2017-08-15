@@ -3,6 +3,8 @@
 A crude html page coded in one day with some JS for speedreading.
 But hey, at least it's self-contained.
 
+Live version here: https://adrienmatricon.github.io/speedreading/speedreading.html
+
 ### How it works
 * Copy/paste a text you want to speedread.
 * Click "Start".
