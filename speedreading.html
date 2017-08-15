@@ -332,6 +332,13 @@
             }
         }
 
+        function spacePressed(e) {
+            if (!displayingOriginal && (e.keyCode == 32)) {
+                e.preventDefault();
+                pauseResume();
+            }
+        }
+
         // cookies & fields
         {
             var tempFreq = getCookie("freq");
@@ -351,6 +358,7 @@
 
         selectedField.addEventListener("change", parseFields);
         document.addEventListener("click", clicked);
+        document.addEventListener("keydown", spacePressed);
     </script>
 </body>
 </html>
