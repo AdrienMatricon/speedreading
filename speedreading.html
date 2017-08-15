@@ -113,6 +113,7 @@
         var syllablesPerWord = 2.5;
         var regex;
         var countDown = 0;
+        var scrollCountDown = 0;
         var nbSelected = 3;
         var selected = [];
 
@@ -171,6 +172,8 @@
         }
 
         function displayOriginal() {
+            window.scroll(0,0);
+
             original.style.display = "block";
             copy.style.display = "none";
 
@@ -241,7 +244,7 @@
 
         function scrollTimerFunction() {
             if (scrollCountDown > 0) {
-                window.scrollBy(0, 1);
+                window.scrollBy(0, 5);
                 scrollCountDown--;
             }
             else {
@@ -250,6 +253,10 @@
         }
 
         function timerFunction() {
+            if (scrollCountDown > 0) {
+                return;
+            }
+
             if (countDown > 0) {
                 countDown--;
                 return;
@@ -265,8 +272,8 @@
                 countDown = countSyllables(selected[0].innerText);
 
                 if (window.innerHeight - next.getBoundingClientRect().top < 20) {
-                    scrollCountDown = window.innerHeight-80;
-                    window.setInterval(scrollTimerFunction, 1);
+                    scrollCountDown = (window.innerHeight-80)/5;
+                    window.setInterval(scrollTimerFunction, 10);
                 }
             }
         }
