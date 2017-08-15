@@ -17,3 +17,4 @@ But hey, at least it's self-contained.
 - **v1.0:** basic version
 - **v1.1:** button to save preferences, several words in bold at once
 - **v1.2:** speed adjusted for the number of syllables in each word, highlighting of the words for better visibility
+- **v1.3:** autoscroll

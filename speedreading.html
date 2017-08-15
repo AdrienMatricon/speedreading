@@ -108,6 +108,7 @@
         var displayingOriginal = true;
         var playing = false;
         var timer = null;
+        var scrollTimer = null;
         var freq = 200.0;
         var syllablesPerWord = 2.5;
         var regex;
@@ -238,6 +239,16 @@
             return count;
         }
 
+        function scrollTimerFunction() {
+            if (scrollCountDown > 0) {
+                window.scrollBy(0, 1);
+                scrollCountDown--;
+            }
+            else {
+                window.clearInterval(scrollTimer);
+            }
+        }
+
         function timerFunction() {
             if (countDown > 0) {
                 countDown--;
@@ -252,6 +263,11 @@
                 strong(next);
                 selected.push(next);
                 countDown = countSyllables(selected[0].innerText);
+
+                if (window.innerHeight - next.getBoundingClientRect().top < 20) {
+                    scrollCountDown = window.innerHeight-80;
+                    window.setInterval(scrollTimerFunction, 1);
+                }
             }
         }
 
