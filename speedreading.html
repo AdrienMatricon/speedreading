@@ -1,0 +1,237 @@
+<html>
+<head>
+    <title>Speed Reading</title>
+    <meta charset="UTF-8">
+    <style type="text/css">
+        header {
+            position: fixed;
+            top: 10px;
+            z-index: 1;
+        }
+
+        footer {
+            width: 1000px;
+        }
+
+        .strong {
+            font-weight: bold;
+        }
+
+        .control {
+            position: absolute;
+            top: 0px;
+            border: 1px solid black;
+            background-color: white;
+            width: 100px;
+            height: 20px;
+        }
+
+        .control {
+            text-align: center;
+        }
+
+        .button:hover {
+            font-weight: bold;
+        }
+
+
+        #stop {
+            position: absolute;
+            left: 120px;
+        }
+
+        #speed {
+            position: absolute;
+            left: 240px;
+            height: 22px;
+        }
+
+        #content {
+            position: relative;
+            top: 50px;
+            margin: auto;
+            margin-bottom: 1000px;
+            width: 90%;
+            z-index: 0;
+        }
+
+        #original, #copy {
+            margin: auto;
+            width: 100%;
+        }
+
+        #copy, #stop, #speed {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="control button" id="play">Start</div>
+        <div class="control button" id="stop">Stop</div>
+        <input type="text" value="100 wpm" class="control" id="speed" />
+    </header>
+    <div id="content">
+        <textarea cols=100 rows=30 autofocus id="original"> Copy text here </textarea>
+        <fieldset id="copy">
+            Copied text
+        </fieldset>
+    </div>
+    <script type="text/javascript">
+        var original = document.getElementById("original");
+        var copy = document.getElementById("copy");
+        var playButton = document.getElementById("play");
+        var stopButton = document.getElementById("stop");
+        var speedField = document.getElementById("speed");
+
+        var displayingOriginal = true;
+        var playing = true;
+        var timer = null;
+        var freq = 1.0;
+        var current = null;
+
+        function setCookie(cname, cvalue) {
+            var d = new Date();
+            d.setTime(d.getTime() + (365*24*60*60*1000));
+            var expires = "expires="+ d.toUTCString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        function getCookie(cname) {
+            var name = cname + "=";
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            for(var i = 0; i <ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+
+        function htmlEncode(s) {
+            var el = document.createElement("div");
+            el.innerText = el.textContent = s;
+            s = el.innerHTML;
+            return s;
+        }
+
+        function processText(text) {
+            text = htmlEncode(text);
+            text = text.replace(/(\S)((\s|<br>)+)(\S)/g,"$1</span>$2<span>$4");
+            return "<span>" + text + "</span>";
+        }
+
+        function displayOriginal() {
+            original.style.display = "block";
+            copy.style.display = "none";
+            stopButton.style.display = "none";
+            speedField.style.display = "none";
+
+            playButton.innerHTML = "Start";
+            displayingOriginal = true;
+            playing = false;
+        }
+
+        function displayCopy() {
+            // cookie
+            {
+                var tempFreq = getCookie("freq");
+                if (tempFreq != "")
+                {
+                    speedField.value = tempFreq + " wpm";
+                }
+            }
+
+            copy.innerHTML = processText(original.value);
+            original.style.display = "none";
+            copy.style.display = "block";
+            stopButton.style.display = "block";
+            speedField.style.display = "block";
+
+            current = copy.getElementsByTagName("span")[0];
+            current.className = "strong";
+
+            playButton.innerHTML = "Pause";
+            displayingOriginal = false;
+            playing = false;
+        }
+
+        function timerFunction() {
+            var next = current.nextElementSibling;
+
+            while ((next !== null) && (next.tagName != "SPAN")) {
+                next = next.nextElementSibling;
+            }
+
+            if (next !== null) {
+                current.className = "";
+                next.className = "strong";
+                current = next;
+            }
+        }
+
+        function pauseResume() {
+            if (playing) {
+                playButton.innerHTML = "Resume";
+                playing = false;
+                window.clearInterval(timer);
+            }
+            else {
+                // Speed
+                {
+                    var tempFreq = parseFloat(speedField.value);
+                    var tempPeriod = 60000./tempFreq;
+                    if (!isNaN(tempPeriod))
+                    {
+                        freq = tempFreq;
+                        period = tempPeriod;
+                        setCookie("freq", freq);
+                    }
+                }
+
+                playButton.innerHTML = "Pause";
+                playing = true;
+                timer = window.setInterval(timerFunction, period);
+
+            }
+        }
+
+        function playClicked() {
+            if (displayingOriginal) {
+                displayCopy();
+            }
+            pauseResume();
+        }
+
+
+        function stopClicked() {
+            if (playing) {
+                pauseResume();
+            }
+
+            if (!displayingOriginal) {
+                displayOriginal();
+            }
+        }
+
+        function spanClicked(e) {
+            var target = e.target;
+            if (target.tagName == "SPAN") {
+                current.className = "";
+                target.className = "strong";
+                current = target;
+            }
+        }
+
+        document.getElementById("play").onclick = playClicked;
+        document.getElementById("stop").onclick = stopClicked;
+
+        document.onclick = spanClicked;
+    </script>
+</body>
+</html>
