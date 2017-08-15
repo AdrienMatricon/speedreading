@@ -46,6 +46,18 @@
             height: 22px;
         }
 
+        #selected {
+            position: absolute;
+            left: 360px;
+            height: 22px;
+        }
+
+        #save {
+            position: absolute;
+            left:480px;
+            width: 300px;
+        }
+
         #content {
             position: relative;
             top: 50px;
@@ -60,7 +72,7 @@
             width: 100%;
         }
 
-        #copy, #stop, #speed {
+        #copy {
             display: none;
         }
     </style>
@@ -70,6 +82,10 @@
         <div class="control button" id="play">Start</div>
         <div class="control button" id="stop">Stop</div>
         <input type="text" value="100 wpm" class="control" id="speed" />
+        <input type="text" value="2 words" class="control" id="selected" />
+        <div class="control button" id="save">
+            Use a cookie to save your preferences
+        </div>
     </header>
     <div id="content">
         <textarea cols=100 rows=30 autofocus id="original"> Copy text here </textarea>
@@ -83,12 +99,14 @@
         var playButton = document.getElementById("play");
         var stopButton = document.getElementById("stop");
         var speedField = document.getElementById("speed");
+        var selectedField = document.getElementById("selected");
 
         var displayingOriginal = true;
-        var playing = true;
+        var playing = false;
         var timer = null;
-        var freq = 1.0;
-        var current = null;
+        var freq = 100.0;
+        var nbSelected = 2;
+        var selected = [];
 
         function setCookie(cname, cvalue) {
             var d = new Date();
@@ -129,8 +147,6 @@
         function displayOriginal() {
             original.style.display = "block";
             copy.style.display = "none";
-            stopButton.style.display = "none";
-            speedField.style.display = "none";
 
             playButton.innerHTML = "Start";
             displayingOriginal = true;
@@ -138,40 +154,79 @@
         }
 
         function displayCopy() {
-            // cookie
-            {
-                var tempFreq = getCookie("freq");
-                if (tempFreq != "")
-                {
-                    speedField.value = tempFreq + " wpm";
-                }
-            }
-
             copy.innerHTML = processText(original.value);
             original.style.display = "none";
             copy.style.display = "block";
-            stopButton.style.display = "block";
-            speedField.style.display = "block";
 
-            current = copy.getElementsByTagName("span")[0];
-            current.className = "strong";
+            selectFrom(copy.getElementsByTagName("span")[0]);
 
             playButton.innerHTML = "Pause";
             displayingOriginal = false;
             playing = false;
         }
 
-        function timerFunction() {
+        function getNext(current) {
             var next = current.nextElementSibling;
 
             while ((next !== null) && (next.tagName != "SPAN")) {
                 next = next.nextElementSibling;
             }
 
+            return next;
+        }
+
+        function selectFrom(current) {
+            for (var i = 0; i < selected.length; ++i) {
+                unstrong(selected[i]);
+            }
+
+            selected = [current];
+            strong(current);
+            var next = getNext(current);
+            var count = 1;
+
+            while ((next !== null) && (count < nbSelected)) {
+                selected.push(next);
+                strong(next);
+                next = getNext(next);
+                count++;
+            }
+        }
+
+        function strong(current) {
+            current.className = "strong";
+        }
+
+        function unstrong(current) {
+            current.className = "";
+        }
+
+        function timerFunction() {
+            var last = selected[selected.length - 1];
+            var next = getNext(last);
+
             if (next !== null) {
-                current.className = "";
-                next.className = "strong";
-                current = next;
+                unstrong(selected.shift());
+                strong(next);
+                selected.push(next);
+            }
+        }
+
+        function parseFields() {
+            var tempFreq = parseFloat(speedField.value);
+            var tempPeriod = 60000./tempFreq;
+            if (!isNaN(tempPeriod)) {
+                freq = tempFreq;
+                period = tempPeriod;
+            }
+
+            var tempNbSelected = parseInt(selectedField.value);
+            if (!isNaN(tempNbSelected)) {
+                nbSelected = tempNbSelected;
+            }
+
+            if (selected.length > 0) {
+                selectFrom(selected[0]);
             }
         }
 
@@ -182,18 +237,7 @@
                 window.clearInterval(timer);
             }
             else {
-                // Speed
-                {
-                    var tempFreq = parseFloat(speedField.value);
-                    var tempPeriod = 60000./tempFreq;
-                    if (!isNaN(tempPeriod))
-                    {
-                        freq = tempFreq;
-                        period = tempPeriod;
-                        setCookie("freq", freq);
-                    }
-                }
-
+                parseFields();
                 playButton.innerHTML = "Pause";
                 playing = true;
                 timer = window.setInterval(timerFunction, period);
@@ -201,37 +245,53 @@
             }
         }
 
-        function playClicked() {
-            if (displayingOriginal) {
-                displayCopy();
-            }
-            pauseResume();
-        }
-
-
-        function stopClicked() {
-            if (playing) {
-                pauseResume();
-            }
-
-            if (!displayingOriginal) {
-                displayOriginal();
-            }
-        }
-
-        function spanClicked(e) {
+        function clicked(e) {
             var target = e.target;
             if (target.tagName == "SPAN") {
-                current.className = "";
-                target.className = "strong";
-                current = target;
+                selectFrom(target);
+            }
+            else if (target.id == "play") {
+                if (displayingOriginal) {
+                    displayCopy();
+                }
+                pauseResume();
+            }
+            else if (target.id == "stop") {
+                if (playing) {
+                    pauseResume();
+                }
+
+                if (!displayingOriginal) {
+                    displayOriginal();
+                }
+            }
+            else if (target.id == "save")
+            {
+                parseFields();
+                setCookie("freq", freq);
+                setCookie("nbSelected", nbSelected);
             }
         }
 
-        document.getElementById("play").onclick = playClicked;
-        document.getElementById("stop").onclick = stopClicked;
+        // cookies & fields
+        {
+            var tempFreq = getCookie("freq");
+            if (tempFreq != "")
+            {
+                speedField.value = tempFreq + " wpm";
+            }
 
-        document.onclick = spanClicked;
+            var tempNbSelected = getCookie("nbSelected");
+            if (tempNbSelected != "")
+            {
+                selectedField.value = tempNbSelected + " words";
+            }
+
+            parseFields();
+        }
+
+        selectedField.addEventListener("change", parseFields);
+        document.addEventListener("click", clicked);
     </script>
 </body>
 </html>

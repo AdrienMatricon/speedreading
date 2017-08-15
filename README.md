@@ -15,3 +15,4 @@ But hey, at least it's self-contained.
 ### Version history
 
 - **v1.0:** basic version
+- **v1.1:** button to save preferences, several words in bold at once
