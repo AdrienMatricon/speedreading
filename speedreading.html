@@ -14,7 +14,11 @@
         }
 
         .strong {
+            background: rgba(230, 220, 150);
+            padding: 3px 5px;
+            margin: -3px -2px;
             font-weight: bold;
+            display:inline-block;
         }
 
         .control {
@@ -104,9 +108,20 @@
         var displayingOriginal = true;
         var playing = false;
         var timer = null;
-        var freq = 100.0;
-        var nbSelected = 2;
+        var freq = 200.0;
+        var syllablesPerWord = 2.5;
+        var regex;
+        var countDown = 0;
+        var nbSelected = 3;
         var selected = [];
+
+        // regex
+        {
+            var vowel = "[aeiouyAEIOUYáàâäãåéèêëíìîïóòôöõúùûüýÿæœÁÀÂÄÃÅÉÈÊËÍÌÎÏÓÒÔÖÕÚÙÛÜÝŸÆŒ']";
+            var consonant = "[^aeiouyAEIOUYáàâäãåéèêëíìîïóòôöõúùûüýÿæœÁÀÂÄÃÅÉÈÊËÍÌÎÏÓÒÔÖÕÚÙÛÜÝŸÆŒ0-9']";
+            var pattern = "([0-9]|" + vowel + consonant + "+" + vowel + "|" + vowel +"{3})";
+            regex = new RegExp(pattern, 'g');
+        }
 
         function setCookie(cname, cvalue) {
             var d = new Date();
@@ -144,6 +159,16 @@
             return "<span>" + text + "</span>";
         }
 
+        function computesyllablesPerWord() {
+            var spans = copy.getElementsByTagName("span");
+            var count = 0;
+            var nbWords = spans.length;
+            for (var i = 0; i < nbWords; i++) {
+                count = count + countSyllables(spans[i].innerText);
+            }
+            syllablesPerWord = count / nbWords;
+        }
+
         function displayOriginal() {
             original.style.display = "block";
             copy.style.display = "none";
@@ -155,6 +180,8 @@
 
         function displayCopy() {
             copy.innerHTML = processText(original.value);
+            computesyllablesPerWord();
+
             original.style.display = "none";
             copy.style.display = "block";
 
@@ -201,7 +228,22 @@
             current.className = "";
         }
 
+        function countSyllables(word) {
+            var count = 1;
+            var additionalSyllables = word.match(regex);
+            if (additionalSyllables !== null) {
+                count = count + additionalSyllables.length;
+            }
+
+            return count;
+        }
+
         function timerFunction() {
+            if (countDown > 0) {
+                countDown--;
+                return;
+            }
+
             var last = selected[selected.length - 1];
             var next = getNext(last);
 
@@ -209,12 +251,13 @@
                 unstrong(selected.shift());
                 strong(next);
                 selected.push(next);
+                countDown = countSyllables(selected[0].innerText);
             }
         }
 
         function parseFields() {
             var tempFreq = parseFloat(speedField.value);
-            var tempPeriod = 60000./tempFreq;
+            var tempPeriod = 60000./(tempFreq*syllablesPerWord);
             if (!isNaN(tempPeriod)) {
                 freq = tempFreq;
                 period = tempPeriod;
